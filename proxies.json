@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json.schemastore.org/proxies",
+  "proxies": {
+    "requestbin": {
+      "matchCondition": {
+        "route": "{*bin}"
+      },
+      "backendUri": "http://%ACI_FQDN%/{bin}"
+    }
+  }
+}
