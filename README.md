@@ -17,7 +17,13 @@ ACI hosts the RequestBin application by pulling out the [RequestBin image](https
 
 ### Deployment ###
 
-Deployment steps below assumes using Azure PowerShell.
+Click the button below to deploy the ARM template through Azure Portal:
+
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Faliencube%2FRequestBin-on-ACI%2Fmaster%2Fazuredeploy.json" target="_blank">
+  <img src="http://azuredeploy.net/deploybutton.png" />
+</a>
+
+Alternatively, deploy it through Azure PowerShell.
 
 1. Login to Azure Resource Manager through PowerShell.
 
