@@ -1,6 +1,51 @@
 # RequestBin on ACI #
 
-This provides an ARM template to deploy Azure Container Instances (ACI) that run a self-hosted RequestBin application.
+This provides an ARM template to deploy Azure Container Instances (ACI) that runs a self-hosted [RequestBin](http://requestb.in/) application.
+
+
+## Getting Started ##
+
+This ARM template deploys the following Azure resources:
+
+* Azure Storage Account
+* Consumption Plan
+* Azure Functions
+* Azure Container Instances (ACI)
+
+ACI hosts the RequestBin application by pulling out the [RequestBin image](https://hub.docker.com/r/crccheck/requestbin/) and [Redis image](https://hub.docker.com/_/redis/) from Docker Hub. As current ACI service doesn't support HTTPS connection, if HTTPS connection is necessary, the Azure Functions Proxy helps it.
+
+
+### Deployment ###
+
+Deployment steps below assumes using Azure PowerShell.
+
+1. Login to Azure Resource Manager through PowerShell.
+
+    ```powershell
+    Login-AzureRmAccount
+    ```
+1. Create a resource group. Due to the restriction of ACI, its location needs to be considered to one of "East US", "West US", "West US 2", "North Europe", "West Europe", "Southeast Asia".
+
+    ```powershell
+    New-AzureRmResourceGroup `
+        -Name "[RESOURCE_GROUP_NAME]" `
+        -Location "[LOCATION]"
+    ```
+
+1. Update `azuredeploy.parameters.json`.
+1. Deploy the ARM template. Once deployed, it will return both Azure Functions application URL and ACI endpoint URL.
+
+    ```powershell
+    New-AzureRmResourceGroupDeployment `
+        -Name RequestBin `
+        -ResourceGroupName "[RESOURCE_GROUP_NAME]" `
+        -TemplateFile "azuredeploy.json" `
+        -TemplateParameterFile "azuredeploy.parameters.json" `
+        -Verbose
+    ```
+
+1. Deploy the Azure Function Proxy through Azure Portal.
+1. Run both Azure Functions app and ACI container.
 
 
 ## Contribution ##
