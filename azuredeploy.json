@@ -1,0 +1,431 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "The region where resources are deployed. This only considers specific locations where Azure Container Instances is allowed"
+      },
+      "allowedValues": [
+        "eastus",
+        "northeurope",
+        "southeastasia",
+        "westeurope",
+        "westus",
+        "westus2"
+      ],
+      "defaultValue": "westus2"
+    },
+
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Storage Account"
+      }
+    },
+    "storageAccountSkuName": {
+      "type": "string",
+      "metadata": {
+        "description": "SKU Name for the Storage Account"
+      },
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_ZRS",
+        "Standard_RGRS"
+      ],
+      "defaultValue": "Standard_LRS"
+    },
+    "storageAccountSkuTier": {
+      "type": "string",
+      "metadata": {
+        "description": "SKU Tier for the Storage Account"
+      },
+      "defaultValue": "Standard"
+    },
+
+    "appServicePlanName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Consumption Plan"
+      }
+    },
+
+    "functionAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Function app"
+      }
+    },
+    "functionAppExtensionVersion": {
+      "type": "string",
+      "metadata": {
+        "description": "The extension version of Function app"
+      },
+      "allowedValues": [
+        "~1",
+        "beta"
+      ],
+      "defaultValue": "~1"
+    },
+    "functionAppDeploymentRepositoryUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "Source code repository URL for Function proxy"
+      }
+    },
+    "functionAppDeploymentRepositoryBranch": {
+      "type": "string",
+      "metadata": {
+        "description": "Default branch of source code repository for Function proxy"
+      },
+      "defaultValue": "master"
+    },
+    "functionAppDeploymentManualIntegration": {
+      "type": "bool",
+      "metadata": {
+        "description": "Value indicating whether to manually deploy source code from the repository or not"
+      },
+      "defaultValue": true
+    },
+    "functionAppDeploymentRollbackEnabled":{
+      "type": "bool",
+      "metadata": {
+        "description": "Value indicating whether to enable rollback deployment or not"
+      },
+      "defaultValue": false
+    },
+    "functionAppDeploymentFromMercurial":{
+      "type": "bool",
+      "metadata": {
+        "description": "Value indicating whether the repository uses Mercurial or not"
+      },
+      "defaultValue": false
+    },
+
+    "aciName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Container Instances"
+      }
+    },
+    "aciOsType": {
+      "type": "string",
+      "metadata": {
+        "description": "OS type of Container Instances"
+      },
+      "allowedValues": [
+        "Linux",
+        "Windows"
+      ],
+      "defaultValue": "Linux"
+    },
+    "aciEnvironment": {
+      "type": "string",
+      "metadata": {
+        "description": "Environment where Container Instances is running"
+      },
+      "allowedValues": [
+        "local",
+        "development",
+        "test",
+        "production"
+      ],
+      "defaultValue": "development"
+    },
+    "aciTier": {
+      "type": "string",
+      "metadata": {
+        "description": "Container instance tier"
+      },
+      "allowedValues": [
+        "1",
+        "2",
+        "3"
+      ],
+      "defaultValue": "1"
+    },
+    "aciCpuCores": {
+      "type": "int",
+      "metadata": {
+        "description": "The number of CPU cores to allocate to Container instance"
+      },
+      "defaultValue": 1
+    },
+    "aciMemoryInGb": {
+      "type": "int",
+      "metadata": {
+        "description": "The amount of memory in GB to allocate to the Container Instance"
+      },
+      "defaultValue": 1
+    },
+    "aciRequestBinName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the container instance for RequestBin"
+      }
+    },
+    "aciRequestBinImage": {
+      "type": "string",
+      "metadata": {
+        "description": "Container image to deploy for RequestBin, which comes from Docker Hub"
+      },
+      "defaultValue": "crccheck/requestbin:latest"
+    },
+    "aciRedisCacheName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the container instance for Redis Cache"
+      }
+    },
+    "aciRedisCacheImage": {
+      "type": "string",
+      "metadata": {
+        "description": "Container image to deploy for Redis Cache, which comes from Docker Hub"
+      },
+      "defaultValue": "redis"
+    }
+  },
+  "variables": {
+    "storageAccount": {
+      "name": "[parameters('storageAccountName')]",
+      "apiVersion": "[providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('storageAccountSkuName')]",
+        "tier": "[parameters('storageAccountSkuTier')]"
+      }
+    },
+    "appServicePlan": {
+      "name": "[parameters('appServicePlanName')]",
+      "apiVersion": "[providers('Microsoft.Web', 'serverfarms').apiVersions[0]]",
+      "location": "[parameters('location')]"
+    },
+    "functionApp": {
+      "name": "[parameters('functionAppName')]",
+      "apiVersion": "[providers('Microsoft.Web', 'sites').apiVersions[0]]",
+      "location": "[parameters('location')]",
+      "extensionVersion": "[parameters('functionAppExtensionVersion')]",
+      "repoUrl": "[parameters('functionAppDeploymentRepositoryUrl')]",
+      "branch": "[parameters('functionAppDeploymentRepositoryBranch')]",
+      "isManualIntegration": "[parameters('functionAppDeploymentManualIntegration')]",
+      "deploymentRollbackEnabled": "[parameters('functionAppDeploymentRollbackEnabled')]",
+      "isMercurial": "[parameters('functionAppDeploymentFromMercurial')]"
+    },
+    "aci": {
+      "name": "[parameters('aciName')]",
+      "apiVersion": "[providers('Microsoft.ContainerInstance', 'containerGroups').apiVersions[0]]",
+      "location": "[parameters('location')]",
+      "osType": "[parameters('aciOsType')]",
+      "env": "[parameters('aciEnvironment')]",
+      "tier": "[parameters('aciTier')]",
+      "cpu": "[parameters('aciCpuCores')]",
+      "memoryInGb": "[parameters('aciMemoryInGb')]",
+      "containers": {
+        "requestbin": {
+          "name": "[parameters('aciRequestBinName')]",
+          "image": "[parameters('aciRequestBinImage')]",
+        },
+        "redis": {
+          "name": "[parameters('aciRedisCacheName')]",
+          "image": "[parameters('aciRedisCacheImage')]"
+        }
+      }
+    },
+    "tags": {
+      "author": "Justin Yoo",
+      "projectUrl": "https://github.com/aliencube/RequestBin-on-ACI",
+      "repositoryUrl": "https://github.com/aliencube/RequestBin-on-ACI",
+      "copyright": "http://opensource.org/licenses/MIT"
+    }
+  },
+  "resources": [
+    {
+      "comments": "### RESOURCE - STORAGE ACCOUNT ###",
+      "apiVersion": "[variables('storageAccount').apiVersion]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccount').name]",
+      "location": "[variables('storageAccount').location]",
+      "kind": "Storage",
+      "tags": "[variables('tags')]",
+      "sku": {
+        "name": "[variables('storageAccount').sku.name]",
+        "tier": "[variables('storageAccount').sku.tier]"
+      },
+      "properties": {
+        "encryption": {
+          "keySource": "Microsoft.Storage",
+          "services": {
+            "blob": {
+              "enabled": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "comments": "### RESOURCE - CONSUMPTION PLAN ###",
+      "apiVersion": "[variables('appServicePlan').apiVersion]",
+      "type": "Microsoft.Web/serverfarms",
+      "name": "[variables('appServicePlan').name]",
+      "location": "[variables('appServicePlan').location]",
+      "kind": "functionapp",
+      "tags": "[variables('tags')]",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic",
+        "size": "Y1",
+        "family": "Y"
+      },
+      "properties": {
+        "name": "[variables('appServicePlan').name]"
+      }
+    },
+    {
+      "comments": "### RESOURCE - FUNCTION APP ###",
+      "apiVersion": "[variables('functionApp').apiVersion]",
+      "type": "Microsoft.Web/sites",
+      "name": "[variables('functionApp').name]",
+      "location": "[variables('functionApp').location]",
+      "kind": "functionapp",
+      "tags": "[variables('tags')]",
+      "properties": {
+        "name": "[variables('functionApp').name]",
+        "clientAffinityEnabled": false,
+        "httpsOnly": true,
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlan').name)]"
+      },
+      "resources": [
+        {
+          "comments": "### RESOURCE - APP SETTINGS ###",
+          "apiVersion": "[variables('functionApp').apiVersion]",
+          "type": "config",
+          "name": "appsettings",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', variables('functionApp').name)]"
+          ],
+          "properties": {
+            "AzureWebJobsDashboard": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccount').name,';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccount').name), variables('storageAccount').apiVersion).keys[0].value, ';EndpointSuffix=core.windows.net')]",
+            "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccount').name,';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccount').name), variables('storageAccount').apiVersion).keys[0].value, ';EndpointSuffix=core.windows.net')]",
+            "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccount').name,';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccount').name), variables('storageAccount').apiVersion).keys[0].value, ';EndpointSuffix=core.windows.net')]",
+            "WEBSITE_CONTENTSHARE": "[variables('functionApp').name]",
+            "FUNCTIONS_EXTENSION_VERSION": "[variables('functionApp').extensionVersion]",
+            "ACI_FQDN": "[concat(variables('aci').name, '.', resourceGroup().location, '.azurecontainer.io')]"
+          }
+        },
+        {
+          "comments": "### RESOURCE - GITHUB INTEGRATION ###",
+          "apiVersion": "[variables('functionApp').apiVersion]",
+          "type": "sourcecontrols",
+          "name": "web",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', variables('functionApp').name)]"
+          ],
+          "properties": {
+            "repoUrl": "[variables('functionApp').repoUrl]",
+            "branch": "[variables('functionApp').branch]",
+            "isManualIntegration": "[variables('functionApp').isManualIntegration]",
+            "deploymentRollbackEnabled": "[variables('functionApp').deploymentRollbackEnabled]",
+            "isMercurial": "[variables('functionApp').isMercurial]"
+          }
+        }
+      ]
+    },
+    {
+      "comments": "### RESOURCE - CONTAINER GROUP ###",
+      "apiVersion": "[variables('aci').apiVersion]",
+      "type": "Microsoft.ContainerInstance/containerGroups",
+      "name": "[variables('aci').name]",
+      "location": "[variables('aci').location]",
+      "tags": "[variables('tags')]",
+      "properties": {
+        "restartPolicy": "Always",
+        "osType": "[variables('aci').osType]",
+        "containers": [
+          {
+            "name": "[variables('aci').containers.requestbin.name]",
+            "properties": {
+              "image": "[variables('aci').containers.requestbin.image]",
+              "ports": [
+                {
+                  "port": 8000
+                },
+                {
+                  "port": 80
+                }
+              ],
+              "environmentVariables": [
+                {
+                  "name": "ENV",
+                  "value": "[variables('aci').env]"
+                },
+                {
+                  "name": "TIER",
+                  "value": "[variables('aci').tier]"
+                },
+                {
+                  "name": "REDIS_URL",
+                  "value": "redis://127.0.0.1:6379/0"
+                }
+              ],
+              "resources": {
+                "requests": {
+                  "cpu": "[variables('aci').cpu]",
+                  "memoryInGB": "[variables('aci').memoryInGb]"
+                }
+              }
+            }
+          },
+          {
+            "name": "[variables('aci').containers.redis.name]",
+            "properties": {
+              "image": "[variables('aci').containers.redis.image]",
+              "ports": [
+                {
+                  "port": 6379
+                }
+              ],
+              "environmentVariables": [
+                {
+                  "name": "ENV",
+                  "value": "[variables('aci').env]"
+                },
+                {
+                  "name": "TIER",
+                  "value": "[variables('aci').tier]"
+                }
+              ],
+              "resources": {
+                "requests": {
+                  "cpu": "[variables('aci').cpu]",
+                  "memoryInGB": "[variables('aci').memoryInGb]"
+                }
+              }
+            }
+          }
+        ],
+        "ipAddress": {
+          "type": "Public",
+          "dnsNameLabel": "[variables('aci').name]",
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 80
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "functionAppUrl": {
+      "type": "string",
+      "value": "[concat('https://', variables('functionApp').name, '.azurewebsites.net')]"
+    },
+    "requestBinUrl": {
+      "type": "string",
+      "value": "[concat('http://', variables('aci').name, '.', variables('aci').location, '.azurecontainer.io')]"
+    }
+  }
+}
